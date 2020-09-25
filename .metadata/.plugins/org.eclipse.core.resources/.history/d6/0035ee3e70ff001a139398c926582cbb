@@ -24,7 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,7 +55,7 @@ const osThreadAttr_t Sender1_attributes = {
 osThreadId_t ReceiverHandle;
 const osThreadAttr_t Receiver_attributes = {
   .name = "Receiver",
-  .priority = (osPriority_t) osPriorityAboveNormal,
+  .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
 /* Definitions for Sender2 */
@@ -311,11 +311,31 @@ void StartSender1(void *argument)
   for(;;)
   {
 	printf("Task1\n");
-	osMessageQueuePut(Queue01Handle, &tx.message, tx.priority, 200);
+	osMessageQueuePut(Queue01Handle, &tx.message, 200);
 	printf("Task1 delay\n");
     osDelay(2000);
   }
   /* USER CODE END 5 */ 
+}
+
+/* USER CODE BEGIN Header_StartReceiver */
+/**
+* @brief Function implementing the Receiver thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartReceiver */
+void StartReceiver(void *argument)
+{
+  /* USER CODE BEGIN StartReceiver */
+  /* Infinite loop */
+  for(;;)
+  {
+    printf("Task3\n");
+    osEvent retvalue = osMessageQueueGet(Queue01Handle, 4000);
+    printf("%d\n", retvalue.value.p);
+  }
+  /* USER CODE END StartReceiver */
 }
 
 /* USER CODE BEGIN Header_StartSender2 */
@@ -340,32 +360,11 @@ void StartSender2(void *argument)
   for(;;)
   {
     printf("Task2\n");
-    osMessageQueuePut(Queue01Handle, &tx.message, tx.priority, 200);
+    osMessageQueuePut(Queue01Handle, &tx.message, 200);
 	printf("Task2 delay\n");
 	osDelay(2000);
   }
   /* USER CODE END StartSender2 */
-}
-
-/* USER CODE BEGIN Header_StartReceiver */
-/**
-* @brief Function implementing the Receiver thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartReceiver */
-void StartReceiver(void *argument)
-{
-  /* USER CODE BEGIN StartReceiver */
-	uint8_t buffer_get[1];
-  /* Infinite loop */
-  for(;;)
-  {
-    printf("Task3\n");
-    osMessageQueueGet(Queue01Handle, &buffer_get, NULL, 4000);
-    printf("Received: %d\n", (int)buffer_get[0]);
-  }
-  /* USER CODE END StartReceiver */
 }
 
  /**

@@ -851,3 +851,11 @@
 2020-09-24 19:45:11,744 [ERROR] FreeRTOS:936 - Null or empty value: should not occur! (nothing added to the table)
 2020-09-24 19:45:11,748 [INFO] ApiDbMcu:451 - Load IP Config File for FREERTOS
 2020-09-24 19:45:11,766 [INFO] OpenFileManager:294 - Restore cursor
+2020-09-24 20:20:24,706 [INFO] Activator:176 - 
+
+
+2020-09-24 20:20:24,709 [INFO] Activator:177 - !SESSION log4j initialized
+2020-09-25 19:22:30,310 [INFO] Activator:176 - 
+
+
+2020-09-25 19:22:30,313 [INFO] Activator:177 - !SESSION log4j initialized

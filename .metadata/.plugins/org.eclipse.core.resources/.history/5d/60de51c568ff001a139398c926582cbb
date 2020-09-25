@@ -21,10 +21,11 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,7 +56,7 @@ const osThreadAttr_t Sender1_attributes = {
 osThreadId_t ReceiverHandle;
 const osThreadAttr_t Receiver_attributes = {
   .name = "Receiver",
-  .priority = (osPriority_t) osPriorityAboveNormal,
+  .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
 /* Definitions for Sender2 */
@@ -299,52 +300,15 @@ static void MX_GPIO_Init(void)
 void StartSender1(void *argument)
 {
   /* USER CODE BEGIN 5 */
-  struct MsgPrio{
-    uint8_t message;
-	uint8_t priority;
-  } tx;
-
-  tx.message = 0x01;
-  tx.priority = 0;
-
   /* Infinite loop */
   for(;;)
   {
 	printf("Task1\n");
-	osMessageQueuePut(Queue01Handle, &tx.message, tx.priority, 200);
+	osMessagePut(Queue01Handle, 0x1, 200);
 	printf("Task1 delay\n");
     osDelay(2000);
   }
   /* USER CODE END 5 */ 
-}
-
-/* USER CODE BEGIN Header_StartSender2 */
-/**
-* @brief Function implementing the Sender2 thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartSender2 */
-void StartSender2(void *argument)
-{
-  /* USER CODE BEGIN StartSender2 */
-  struct MsgPrio{
-    uint8_t message;
-    uint8_t priority;
-  } tx;
-
-  tx.message = 0x02;
-  tx.priority = 0;
-
-  /* Infinite loop */
-  for(;;)
-  {
-    printf("Task2\n");
-    osMessageQueuePut(Queue01Handle, &tx.message, tx.priority, 200);
-	printf("Task2 delay\n");
-	osDelay(2000);
-  }
-  /* USER CODE END StartSender2 */
 }
 
 /* USER CODE BEGIN Header_StartReceiver */
@@ -357,15 +321,35 @@ void StartSender2(void *argument)
 void StartReceiver(void *argument)
 {
   /* USER CODE BEGIN StartReceiver */
-	uint8_t buffer_get[1];
   /* Infinite loop */
   for(;;)
   {
     printf("Task3\n");
-    osMessageQueueGet(Queue01Handle, &buffer_get, NULL, 4000);
-    printf("Received: %d\n", (int)buffer_get[0]);
+    osEvent retvalue = osMessageGet(Queue01Handle, 4000);
+    printf("%d\n", retvalue.value.p);
   }
   /* USER CODE END StartReceiver */
+}
+
+/* USER CODE BEGIN Header_StartSender2 */
+/**
+* @brief Function implementing the Sender2 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartSender2 */
+void StartSender2(void *argument)
+{
+  /* USER CODE BEGIN StartSender2 */
+  /* Infinite loop */
+  for(;;)
+  {
+    printf("Task2\n");
+	osMessagePut(Queue01Handle, 0x2, 200);
+	printf("Task2 delay\n");
+	osDelay(2000);
+  }
+  /* USER CODE END StartSender2 */
 }
 
  /**

@@ -24,7 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,32 +44,10 @@
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
 
-/* Definitions for Sender1 */
-osThreadId_t Sender1Handle;
-const osThreadAttr_t Sender1_attributes = {
-  .name = "Sender1",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
-/* Definitions for Receiver */
-osThreadId_t ReceiverHandle;
-const osThreadAttr_t Receiver_attributes = {
-  .name = "Receiver",
-  .priority = (osPriority_t) osPriorityAboveNormal,
-  .stack_size = 128 * 4
-};
-/* Definitions for Sender2 */
-osThreadId_t Sender2Handle;
-const osThreadAttr_t Sender2_attributes = {
-  .name = "Sender2",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
-/* Definitions for Queue01 */
-osMessageQueueId_t Queue01Handle;
-const osMessageQueueAttr_t Queue01_attributes = {
-  .name = "Queue01"
-};
+osThreadId Sender1Handle;
+osThreadId ReceiverHandle;
+osThreadId Sender2Handle;
+osMessageQId Queue01Handle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -78,9 +56,9 @@ const osMessageQueueAttr_t Queue01_attributes = {
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
-void StartSender1(void *argument);
-void StartReceiver(void *argument);
-void StartSender2(void *argument);
+void StartSender1(void const * argument);
+void StartReceiver(void const * argument);
+void StartSender2(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -124,9 +102,6 @@ int main(void)
 
   /* USER CODE END 2 */
 
-  /* Init scheduler */
-  osKernelInitialize();
-
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
@@ -140,22 +115,26 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
-  /* creation of Queue01 */
-  Queue01Handle = osMessageQueueNew (256, sizeof(uint8_t), &Queue01_attributes);
+  /* definition and creation of Queue01 */
+  osMessageQDef(Queue01, 256, uint8_t);
+  Queue01Handle = osMessageCreate(osMessageQ(Queue01), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of Sender1 */
-  Sender1Handle = osThreadNew(StartSender1, NULL, &Sender1_attributes);
+  /* definition and creation of Sender1 */
+  osThreadDef(Sender1, StartSender1, osPriorityNormal, 0, 128);
+  Sender1Handle = osThreadCreate(osThread(Sender1), NULL);
 
-  /* creation of Receiver */
-  ReceiverHandle = osThreadNew(StartReceiver, NULL, &Receiver_attributes);
+  /* definition and creation of Receiver */
+  osThreadDef(Receiver, StartReceiver, osPriorityNormal, 0, 128);
+  ReceiverHandle = osThreadCreate(osThread(Receiver), NULL);
 
-  /* creation of Sender2 */
-  Sender2Handle = osThreadNew(StartSender2, NULL, &Sender2_attributes);
+  /* definition and creation of Sender2 */
+  osThreadDef(Sender2, StartSender2, osPriorityNormal, 0, 128);
+  Sender2Handle = osThreadCreate(osThread(Sender2), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -296,55 +275,18 @@ static void MX_GPIO_Init(void)
   * @retval None
   */
 /* USER CODE END Header_StartSender1 */
-void StartSender1(void *argument)
+void StartSender1(void const * argument)
 {
   /* USER CODE BEGIN 5 */
-  struct MsgPrio{
-    uint8_t message;
-	uint8_t priority;
-  } tx;
-
-  tx.message = 0x01;
-  tx.priority = 0;
-
   /* Infinite loop */
   for(;;)
   {
 	printf("Task1\n");
-	osMessageQueuePut(Queue01Handle, &tx.message, tx.priority, 200);
+	osMessageQueuePut(Queue01Handle, (void *) 0x1, 200);
 	printf("Task1 delay\n");
     osDelay(2000);
   }
   /* USER CODE END 5 */ 
-}
-
-/* USER CODE BEGIN Header_StartSender2 */
-/**
-* @brief Function implementing the Sender2 thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartSender2 */
-void StartSender2(void *argument)
-{
-  /* USER CODE BEGIN StartSender2 */
-  struct MsgPrio{
-    uint8_t message;
-    uint8_t priority;
-  } tx;
-
-  tx.message = 0x02;
-  tx.priority = 0;
-
-  /* Infinite loop */
-  for(;;)
-  {
-    printf("Task2\n");
-    osMessageQueuePut(Queue01Handle, &tx.message, tx.priority, 200);
-	printf("Task2 delay\n");
-	osDelay(2000);
-  }
-  /* USER CODE END StartSender2 */
 }
 
 /* USER CODE BEGIN Header_StartReceiver */
@@ -354,18 +296,38 @@ void StartSender2(void *argument)
 * @retval None
 */
 /* USER CODE END Header_StartReceiver */
-void StartReceiver(void *argument)
+void StartReceiver(void const * argument)
 {
   /* USER CODE BEGIN StartReceiver */
-	uint8_t buffer_get[1];
   /* Infinite loop */
   for(;;)
   {
     printf("Task3\n");
-    osMessageQueueGet(Queue01Handle, &buffer_get, NULL, 4000);
-    printf("Received: %d\n", (int)buffer_get[0]);
+    osEvent retvalue = osMessageQueueGet(Queue01Handle, 4000);
+    printf("%d\n", retvalue.value.p);
   }
   /* USER CODE END StartReceiver */
+}
+
+/* USER CODE BEGIN Header_StartSender2 */
+/**
+* @brief Function implementing the Sender2 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartSender2 */
+void StartSender2(void const * argument)
+{
+  /* USER CODE BEGIN StartSender2 */
+  /* Infinite loop */
+  for(;;)
+  {
+    printf("Task2\n");
+    osMessageQueuePut(Queue01Handle, (void *) 0x2, 200);
+	printf("Task2 delay\n");
+	osDelay(2000);
+  }
+  /* USER CODE END StartSender2 */
 }
 
  /**
